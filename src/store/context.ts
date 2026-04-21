@@ -33,6 +33,12 @@ export interface StoreApi {
 
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void
   setConnector: (key: keyof Connectors, on: boolean) => void
+  /**
+   * Update a Settings key AND persist it through to the server config where
+   * the key is in the PATCH-whitelist. Non-whitelisted keys (temperature,
+   * dailyBudget, connectors, density) are stored locally only.
+   */
+  patchSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => Promise<void>
 
   addBgTask: (prompt: string) => Promise<void>
   cancelBgTask: (id: string) => void

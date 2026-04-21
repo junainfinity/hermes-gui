@@ -12,7 +12,7 @@ export function HomePage(): ReactNode {
   const hour = new Date().getHours()
   const greeting =
     hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
-  const displayName = 'there'
+  const displayName = s.state.profile?.displayName ?? 'there'
 
   const recentSessions = useMemo(
     () => [...s.state.sessions].sort((a, b) => b.updated - a.updated).slice(0, 6),

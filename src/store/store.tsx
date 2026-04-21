@@ -13,7 +13,57 @@ import { HermesClient } from '@/client/hermes-client'
 import { loadAuth, saveAuth, type AuthState } from '@/client/auth'
 import { toolKind } from '@/client/converters'
 import { BUILT_IN_SLASH_COMMANDS } from '@/lib/slash-commands'
-import type { BgTask, Message, RouteName } from '@/types'
+import type {
+  BgTask,
+  Message,
+  Profile,
+  RouteName,
+  Settings,
+  WireConfig,
+  WireProfile,
+} from '@/types'
+
+/** Map each UI Settings key that's writable server-side to its dotted config path. */
+const SETTING_TO_CONFIG_PATH: Partial<Record<keyof Settings, string>> = {
+  model: 'model.default',
+  fallback: 'model.fallback',
+  provider: 'model.provider',
+  personality: 'personalities.default',
+  compressionModel: 'auxiliary.compression.model',
+}
+
+function settingsFromConfig(cfg: WireConfig, base: Settings): Settings {
+  const model = cfg.model as Record<string, unknown> | undefined
+  const aux = cfg.auxiliary as { compression?: { model?: string } } | undefined
+  const compression = cfg.compression as { threshold?: number; enabled?: boolean } | undefined
+  const personalities = cfg.personalities as Record<string, string> | undefined
+
+  return {
+    ...base,
+    model: typeof model?.default === 'string' ? model.default : base.model,
+    fallback: typeof model?.fallback === 'string' ? model.fallback : base.fallback,
+    provider: typeof model?.provider === 'string' ? model.provider : base.provider,
+    personality:
+      typeof personalities?.default === 'string' ? personalities.default : base.personality,
+    compressionModel:
+      typeof aux?.compression?.model === 'string' ? aux.compression.model : base.compressionModel,
+    compressionThreshold:
+      typeof compression?.threshold === 'number'
+        ? Math.round(compression.threshold * 100)
+        : base.compressionThreshold,
+  }
+}
+
+function profileFromWire(wire: WireProfile): Profile {
+  return {
+    profile: wire.profile,
+    displayName: wire.display_name,
+    email: wire.email,
+    providersConfigured: wire.providers_configured,
+    activeProvider: wire.active_provider,
+    activeModel: wire.active_model,
+  }
+}
 
 export function StoreProvider({ children }: { children: ReactNode }): ReactNode {
   const persisted = useMemo<PersistedState>(() => loadPersisted(), [])
@@ -51,9 +101,21 @@ export function StoreProvider({ children }: { children: ReactNode }): ReactNode 
     state.leftPanelCollapsed,
   ])
 
+  // Surface installed skills as slash commands alongside the built-ins
   useEffect(() => {
-    dispatch({ type: 'SET_SLASH_COMMANDS', commands: BUILT_IN_SLASH_COMMANDS })
+    const skillCommands = state.skills
+      .filter((sk) => sk.installed)
+      .map((sk) => ({
+        cmd: `/${sk.name}`,
+        desc: sk.desc !== '' ? sk.desc : 'Run this skill',
+      }))
+    dispatch({
+      type: 'SET_SLASH_COMMANDS',
+      commands: [...BUILT_IN_SLASH_COMMANDS, ...skillCommands],
+    })
+  }, [state.skills])
 
+  useEffect(() => {
     const client = clientRef.current
     const auth = authRef.current
     if (!auth.apiKey) {
@@ -72,14 +134,27 @@ export function StoreProvider({ children }: { children: ReactNode }): ReactNode 
          
         if (ac.signal.aborted) return
 
-        const [models, skills] = await Promise.all([
+        const [models, skills, configRes, profileRes] = await Promise.all([
           client.listModels().catch(() => []),
           client.listSkills().catch(() => []),
+          client.getConfig().catch(() => null as WireConfig | null),
+          client.getProfile().catch(() => null as WireProfile | null),
         ])
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- set by cleanup
         if (ac.signal.aborted) return
         dispatch({ type: 'SET_MODELS', models })
         dispatch({ type: 'SET_SKILLS', skills })
+        if (configRes) {
+          const merged = settingsFromConfig(configRes, persisted.settings)
+          ;(Object.keys(merged) as (keyof Settings)[]).forEach((k) => {
+            if (merged[k] !== persisted.settings[k]) {
+              dispatch({ type: 'SET_SETTING', key: k, value: merged[k] })
+            }
+          })
+        }
+        if (profileRes) {
+          dispatch({ type: 'SET_PROFILE', profile: profileFromWire(profileRes) })
+        }
 
         const result = await client
           .listSessions({ limit: 50 }, (id) => ({
@@ -243,15 +318,10 @@ export function StoreProvider({ children }: { children: ReactNode }): ReactNode 
 
     const exportSession = (id: string): Promise<string> => client.exportSession(id)
 
-    const toggleSkillPinned = async (id: string): Promise<void> => {
-      const skill = stateRef.current.skills.find((s) => s.id === id)
-      if (!skill) return
-      try {
-        await client.setSkillTapped(id, !skill.pinned)
-        dispatch({ type: 'TOGGLE_SKILL_PINNED', id })
-      } catch (err) {
-        toast(err instanceof Error ? err.message : 'Failed to update skill')
-      }
+    const toggleSkillPinned = (id: string): Promise<void> => {
+      // Skill pinning is UI-only; persisted via localStorage, not to config.yaml
+      dispatch({ type: 'TOGGLE_SKILL_PINNED', id })
+      return Promise.resolve()
     }
 
     const toggleSkillInstalled = async (id: string): Promise<void> => {
@@ -264,9 +334,13 @@ export function StoreProvider({ children }: { children: ReactNode }): ReactNode 
             type: 'UPSERT_SKILL',
             skill: { ...skill, installed: false, pinned: false },
           })
+          toast(`uninstalled ${skill.name}`)
         } else {
-          const fresh = await client.installSkill(id)
-          dispatch({ type: 'UPSERT_SKILL', skill: fresh })
+          await client.installSkill(id)
+          // Refetch the full skill list so metadata is accurate
+          const fresh = await client.listSkills()
+          dispatch({ type: 'SET_SKILLS', skills: fresh })
+          toast(`installed ${skill.name}`)
         }
       } catch (err) {
         toast(err instanceof Error ? err.message : 'Failed to update skill')
@@ -365,6 +439,24 @@ export function StoreProvider({ children }: { children: ReactNode }): ReactNode 
       },
       setConnector: (key, on) => {
         dispatch({ type: 'SET_CONNECTOR', key, on })
+      },
+      patchSetting: async (key, value) => {
+        // Optimistic update locally
+        dispatch({ type: 'SET_SETTING', key, value })
+        const path = SETTING_TO_CONFIG_PATH[key]
+        let wirePath: string | null = path ?? null
+        let wireValue: unknown = value
+        // compressionThreshold needs unit conversion: UI 30-90 → config 0.30-0.90
+        if (key === 'compressionThreshold' && typeof value === 'number') {
+          wirePath = 'compression.threshold'
+          wireValue = Math.round((value / 100) * 100) / 100
+        }
+        if (!wirePath) return
+        try {
+          await client.patchConfig({ [wirePath]: wireValue })
+        } catch (err) {
+          toast(err instanceof Error ? err.message : 'Failed to save setting')
+        }
       },
 
       addBgTask,

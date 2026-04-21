@@ -89,31 +89,36 @@ function Select<T extends string>({
 
 function SettingsModel(): ReactNode {
   const s = useStore()
-  const modelOptions = s.state.models.map((m) => ({
-    value: m.id,
-    label: `${m.label}  ·  ${m.ctx}  ·  ${m.cost}`,
-  }))
+  const modelOptions = s.state.models.length
+    ? s.state.models.map((m) => ({
+        value: m.id,
+        label: `${m.label}  ·  ${m.ctx}  ·  ${m.cost}`,
+      }))
+    : [{ value: s.state.settings.model || '', label: s.state.settings.model || '(no models)' }]
   return (
     <div>
       <h3 style={{ margin: '0 0 8px', fontSize: 18 }}>Model & profile</h3>
       <p className="t-sm c-3" style={{ margin: '0 0 12px' }}>
-        Default model used for new sessions.
+        Default model used for new sessions. Saved to ~/.hermes/config.yaml.
       </p>
       <Field label="Primary model">
         <Select
           value={s.state.settings.model}
-          onChange={(v) => { s.setSetting('model', v) }}
+          onChange={(v) => { void s.patchSetting('model', v) }}
           options={modelOptions}
         />
       </Field>
       <Field label="Fallback model" desc="Used when the primary is rate-limited or unavailable.">
         <Select
           value={s.state.settings.fallback}
-          onChange={(v) => { s.setSetting('fallback', v) }}
+          onChange={(v) => { void s.patchSetting('fallback', v) }}
           options={modelOptions}
         />
       </Field>
-      <Field label="Reasoning effort" desc="Higher = more deliberate thinking; slower, more expensive.">
+      <Field label="Provider" desc="Inference provider chain. Configured via `hermes model`.">
+        <code className="mono t-sm c-3">{s.state.settings.provider || '(auto)'}</code>
+      </Field>
+      <Field label="Reasoning effort" desc="Per-run parameter; sent with each /v1/runs request.">
         <div className="row gap-1">
           {(['low', 'medium', 'high'] satisfies Reasoning[]).map((k) => (
             <button
@@ -126,7 +131,7 @@ function SettingsModel(): ReactNode {
           ))}
         </div>
       </Field>
-      <Field label="Temperature" desc={`Current: ${s.state.settings.temperature.toString()}`}>
+      <Field label="Temperature" desc={`Local preset (not persisted to Hermes). Current: ${s.state.settings.temperature.toString()}`}>
         <input
           type="range"
           min="0"
@@ -220,7 +225,7 @@ function SettingsPersonality(): ReactNode {
               borderColor: s.state.settings.personality === p.id ? 'var(--accent)' : undefined,
               background: s.state.settings.personality === p.id ? 'var(--accent-soft)' : undefined,
             }}
-            onClick={() => { s.setSetting('personality', p.id) }}
+            onClick={() => { void s.patchSetting('personality', p.id) }}
           >
             <div className="row gap-2" style={{ marginBottom: 4 }}>
               <span className="fw-600">{p.label}</span>
@@ -246,7 +251,7 @@ function SettingsContext(): ReactNode {
       </p>
       <Field
         label="Auto-compress threshold"
-        desc={`Summarize middle turns when context passes ${s.state.settings.compressionThreshold.toString()}%.`}
+        desc={`Summarize middle turns when context passes ${s.state.settings.compressionThreshold.toString()}%. Written to compression.threshold.`}
       >
         <input
           type="range"
@@ -254,14 +259,14 @@ function SettingsContext(): ReactNode {
           max="90"
           step="5"
           value={s.state.settings.compressionThreshold}
-          onChange={(e) => { s.setSetting('compressionThreshold', Number(e.target.value)) }}
+          onChange={(e) => { void s.patchSetting('compressionThreshold', Number(e.target.value)) }}
           style={{ width: 200 }}
         />
       </Field>
-      <Field label="Summary model" desc="Cheap & fast is usually right.">
+      <Field label="Summary model" desc="Cheap & fast is usually right. Written to auxiliary.compression.model.">
         <Select
           value={s.state.settings.compressionModel}
-          onChange={(v) => { s.setSetting('compressionModel', v) }}
+          onChange={(v) => { void s.patchSetting('compressionModel', v) }}
           options={s.state.models.map((m) => ({ value: m.id, label: m.label }))}
         />
       </Field>

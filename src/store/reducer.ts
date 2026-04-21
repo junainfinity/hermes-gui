@@ -53,6 +53,7 @@ export type Action =
   | { type: 'SET_MODELS'; models: Model[] }
   | { type: 'SET_PERSONALITIES'; personalities: Personality[] }
   | { type: 'SET_SLASH_COMMANDS'; commands: SlashCommand[] }
+  | { type: 'SET_PROFILE'; profile: StoreState['profile'] }
   | { type: 'SET_SETTING'; key: keyof Settings; value: Settings[keyof Settings] }
   | { type: 'SET_CONNECTOR'; key: keyof Settings['connectors']; on: boolean }
   | { type: 'ADD_BG_TASK'; task: BgTask }
@@ -71,6 +72,7 @@ export function createInitialState(persisted: PersistedState = DEFAULT_PERSISTED
     personalities: [],
     slashCommands: [],
     settings: persisted.settings,
+    profile: null,
     commandOpen: false,
     voiceOn: false,
     rightPanel: persisted.rightPanel,
@@ -269,6 +271,8 @@ export function reducer(state: StoreState, action: Action): StoreState {
       return { ...state, personalities: action.personalities }
     case 'SET_SLASH_COMMANDS':
       return { ...state, slashCommands: action.commands }
+    case 'SET_PROFILE':
+      return { ...state, profile: action.profile }
 
     case 'SET_SETTING':
       return { ...state, settings: { ...state.settings, [action.key]: action.value } }

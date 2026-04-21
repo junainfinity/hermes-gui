@@ -346,6 +346,15 @@ export interface Toast {
   id: number
 }
 
+export interface Profile {
+  profile: string
+  displayName: string
+  email: string | null
+  providersConfigured: string[]
+  activeProvider: string | null
+  activeModel: string | null
+}
+
 export interface StoreState {
   route: Route
   activeSessionId: string | null
@@ -357,6 +366,7 @@ export interface StoreState {
   personalities: Personality[]
   slashCommands: SlashCommand[]
   settings: Settings
+  profile: Profile | null
   commandOpen: boolean
   voiceOn: boolean
   rightPanel: RightPanel

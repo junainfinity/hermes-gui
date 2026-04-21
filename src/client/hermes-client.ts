@@ -140,20 +140,18 @@ export class HermesClient {
     return wire.skills.map(wireSkillToDomain)
   }
 
-  async installSkill(id: string): Promise<Skill> {
-    const wire = await this.jsonRequest<{ skill: WireSkillListResponse['skills'][number] }>(
+  async installSkill(id: string): Promise<void> {
+    // The server shells out to `hermes skills install` and returns {ok, id}.
+    // We don't try to reconstruct a full Skill here; the caller refetches
+    // via listSkills() to pick up accurate metadata from the new manifest.
+    await this.jsonRequest<{ ok: boolean; id: string }>(
       'POST',
       `/v1/skills/${encodeURIComponent(id)}/install`,
     )
-    return wireSkillToDomain(wire.skill)
   }
 
   async uninstallSkill(id: string): Promise<void> {
     await this.request('DELETE', `/v1/skills/${encodeURIComponent(id)}`)
-  }
-
-  async setSkillTapped(id: string, tapped: boolean): Promise<void> {
-    await this.request(tapped ? 'POST' : 'DELETE', `/v1/skills/${encodeURIComponent(id)}/tap`)
   }
 
   // ── Config & profile ─────────────────────────────────────────────────────
