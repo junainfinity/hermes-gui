@@ -1,0 +1,257 @@
+/* Hermes Web GUI — Wireframe styles
+   B&W + one accent. Sketchy/hand-drawn feel via Caveat/Kalam/Architects Daughter. */
+
+:root {
+  --ink: #1a1814;
+  --ink-2: #3d3a34;
+  --ink-3: #6b665e;
+  --ink-4: #a29d92;
+  --paper: #fbfaf6;
+  --paper-2: #f3f1ea;
+  --paper-3: #e8e5db;
+  --line: #2a2620;
+  --line-soft: #b5afa2;
+  --accent: oklch(64% 0.16 42);        /* warm orange */
+  --accent-soft: oklch(90% 0.06 42);
+  --accent-ink: oklch(35% 0.12 42);
+  --note: oklch(92% 0.07 90);          /* highlighter yellow */
+  --shadow: 0 1px 0 rgba(0,0,0,.06), 0 6px 18px -10px rgba(0,0,0,.25);
+}
+
+.dark {
+  --ink: #f1ede4;
+  --ink-2: #d4cfc3;
+  --ink-3: #9a9489;
+  --ink-4: #5d584f;
+  --paper: #15130f;
+  --paper-2: #1f1c16;
+  --paper-3: #2a261f;
+  --line: #e8e3d6;
+  --line-soft: #4b463c;
+  --accent: oklch(72% 0.15 42);
+  --accent-soft: oklch(32% 0.08 42);
+  --accent-ink: oklch(82% 0.12 42);
+  --note: oklch(40% 0.06 90);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Architects Daughter", "Caveat", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* Sketchy primitives ─────────────────────────── */
+.wf {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Architects Daughter", system-ui, sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+.hand { font-family: "Caveat", cursive; }
+.mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+.box {
+  border: 1.5px solid var(--line);
+  border-radius: 3px;
+  background: var(--paper);
+  position: relative;
+}
+.box-soft {
+  border: 1.5px solid var(--line-soft);
+  border-radius: 3px;
+  background: var(--paper);
+}
+.box-dashed {
+  border: 1.5px dashed var(--line-soft);
+  border-radius: 3px;
+  background: transparent;
+}
+.box-fill {
+  border: 1.5px solid var(--line);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 3px;
+}
+.box-accent {
+  border: 1.5px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: 3px;
+}
+
+/* Wiggly underline for callouts */
+.squiggle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3 Q5 0 10 3 T20 3 T30 3 T40 3' fill='none' stroke='%23c96442' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  padding-bottom: 4px;
+}
+
+/* Placeholder diagonal fill */
+.hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 7px,
+    var(--line-soft) 7px 8px
+  );
+}
+.hatch-soft {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 9px,
+    rgba(181,175,162,.4) 9px 10px
+  );
+}
+
+/* Text placeholder bars */
+.bar { background: var(--ink-4); height: 6px; border-radius: 3px; opacity: .55; }
+.bar-dark { background: var(--ink-2); height: 6px; border-radius: 3px; opacity: .7; }
+.bar-short { width: 40%; }
+.bar-med   { width: 65%; }
+.bar-long  { width: 85%; }
+
+/* Annotation arrows + notes */
+.note {
+  font-family: "Caveat", cursive;
+  color: var(--accent-ink);
+  font-size: 18px;
+  line-height: 1.1;
+  font-weight: 600;
+}
+.note-sm { font-size: 15px; }
+.arrow {
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Tag / pill */
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  border: 1.2px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--paper);
+  white-space: nowrap;
+}
+.pill-fill { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pill-accent { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+
+/* "Icons" — tiny 16px glyphs in ink */
+.glyph { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: -3px; }
+
+/* Chat bubble feel */
+.msg-user {
+  border: 1.5px solid var(--line);
+  border-radius: 14px 14px 2px 14px;
+  padding: 10px 14px;
+  max-width: 65%;
+  margin-left: auto;
+  background: var(--paper);
+}
+.msg-agent {
+  border: 1.5px solid var(--line);
+  border-radius: 14px 14px 14px 2px;
+  padding: 10px 14px;
+  max-width: 70%;
+  background: var(--paper-2);
+}
+
+/* Tool call log row */
+.tool-row {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  padding: 3px 0;
+  display: flex; align-items: center; gap: 6px;
+  border-left: 2px solid var(--line-soft);
+  padding-left: 10px;
+  margin-left: 4px;
+}
+.tool-row .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* Progress bar (for context %) */
+.ctxbar {
+  height: 6px;
+  border: 1.2px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--paper);
+  position: relative;
+}
+.ctxbar > span { display: block; height: 100%; background: var(--ink); }
+
+/* Underline input look */
+.input-line {
+  border: none;
+  border-bottom: 1.5px solid var(--line);
+  background: transparent;
+  font: inherit;
+  padding: 4px 0;
+  width: 100%;
+  outline: none;
+  color: inherit;
+}
+
+/* Scrollable inner regions */
+.scroll {
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll::-webkit-scrollbar-thumb { background: var(--line-soft); border-radius: 3px; }
+
+/* Fake-button */
+.btn {
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-accent  { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Divider with label */
+.divlabel {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+}
+.divlabel::before, .divlabel::after {
+  content: ""; flex: 1; height: 1px; background: var(--line-soft);
+}
+
+/* Kbd */
+.kbd {
+  display: inline-block; border: 1.2px solid var(--line);
+  border-bottom-width: 2px; border-radius: 3px;
+  padding: 0 5px; font-family: "JetBrains Mono", monospace;
+  font-size: 11px; background: var(--paper);
+}
+
+/* Annotation container — absolute overlays for arrows + Caveat labels */
+.annotate { position: absolute; inset: 0; pointer-events: none; }
+.annotate > * { pointer-events: auto; }
+
+/* Avatar circle placeholder */
+.avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--paper-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: "Caveat", cursive; font-weight: 700; font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* Keep artboards crisp */
+.artboard-root { width: 100%; height: 100%; display: flex; flex-direction: column; }
